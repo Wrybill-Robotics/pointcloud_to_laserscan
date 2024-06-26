@@ -54,6 +54,7 @@
 #include "rclcpp/rclcpp.hpp"
 #include "sensor_msgs/msg/laser_scan.hpp"
 #include "sensor_msgs/msg/point_cloud2.hpp"
+#include "std_srvs/srv/set_bool.hpp"
 
 #include "pointcloud_to_laserscan/visibility_control.h"
 
@@ -77,6 +78,9 @@ private:
   void cloudCallback(sensor_msgs::msg::PointCloud2::ConstSharedPtr cloud_msg);
 
   void subscriptionListenerThreadLoop();
+  void toggleActiveOutput(
+    const std::shared_ptr<std_srvs::srv::SetBool::Request> request,
+    std::shared_ptr<std_srvs::srv::SetBool::Response> response);
 
   std::unique_ptr<tf2_ros::Buffer> tf2_;
   std::unique_ptr<tf2_ros::TransformListener> tf2_listener_;
@@ -87,6 +91,10 @@ private:
   std::thread subscription_listener_thread_;
   std::atomic_bool alive_{true};
 
+  // Service to activate or deactivate obstacle identification
+  rclcpp::Service<std_srvs::srv::SetBool>::SharedPtr service_;
+  bool active_output_;
+
   // ROS Parameters
   int input_queue_size_;
   std::string target_frame_;
@@ -94,6 +102,7 @@ private:
   double min_height_, max_height_, angle_min_, angle_max_, angle_increment_, scan_time_, range_min_,
     range_max_;
   bool use_inf_;
+  
   double inf_epsilon_;
 };
 

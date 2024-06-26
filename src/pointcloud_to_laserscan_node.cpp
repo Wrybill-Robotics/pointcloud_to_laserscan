@@ -74,7 +74,17 @@ PointCloudToLaserScanNode::PointCloudToLaserScanNode(const rclcpp::NodeOptions &
   range_max_ = this->declare_parameter("range_max", std::numeric_limits<double>::max());
   inf_epsilon_ = this->declare_parameter("inf_epsilon", 1.0);
   use_inf_ = this->declare_parameter("use_inf", true);
+  active_output_ = this->declare_parameter("active_output", false);
 
+  // Create service name with target frame as namespace
+  std::string service_name = std::string(this->get_namespace()) +  std::string(this->get_name()) + std::string("/toggle_active_output");
+
+  // Define the service server
+  service_ = this->create_service<std_srvs::srv::SetBool>(
+    service_name,
+    std::bind(&PointCloudToLaserScanNode::toggleActiveOutput, this, std::placeholders::_1, std::placeholders::_2));
+
+  
   pub_ = this->create_publisher<sensor_msgs::msg::LaserScan>("scan", rclcpp::SensorDataQoS());
 
   using std::placeholders::_1;
@@ -103,6 +113,20 @@ PointCloudToLaserScanNode::~PointCloudToLaserScanNode()
 {
   alive_.store(false);
   subscription_listener_thread_.join();
+}
+
+void PointCloudToLaserScanNode::toggleActiveOutput(
+  const std::shared_ptr<std_srvs::srv::SetBool::Request> request,
+  std::shared_ptr<std_srvs::srv::SetBool::Response> response)
+{
+  RCLCPP_INFO(
+          this->get_logger(),
+          "Pointcloud infinite output set to : %i",
+          active_output_);
+  active_output_ = request->data;
+  this->set_parameter(rclcpp::Parameter("active_output", active_output_));
+  response->success = true;
+  response->message = "Active output set to " + std::to_string(active_output_);
 }
 
 void PointCloudToLaserScanNode::subscriptionListenerThreadLoop()
@@ -163,69 +187,75 @@ void PointCloudToLaserScanNode::cloudCallback(
     scan_msg->ranges.assign(ranges_size, scan_msg->range_max + inf_epsilon_);
   }
 
+  if(active_output_ == false){
+    scan_msg->ranges.assign(ranges_size, std::numeric_limits<double>::infinity());
+  
+  } else {
   // Transform cloud if necessary
-  if (scan_msg->header.frame_id != cloud_msg->header.frame_id) {
-    try {
-      auto cloud = std::make_shared<sensor_msgs::msg::PointCloud2>();
-      tf2_->transform(*cloud_msg, *cloud, target_frame_, tf2::durationFromSec(tolerance_));
-      cloud_msg = cloud;
-    } catch (tf2::TransformException & ex) {
-      RCLCPP_ERROR_STREAM(this->get_logger(), "Transform failure: " << ex.what());
-      return;
-    }
-  }
-
-  // Iterate through pointcloud
-  for (sensor_msgs::PointCloud2ConstIterator<float> iter_x(*cloud_msg, "x"),
-    iter_y(*cloud_msg, "y"), iter_z(*cloud_msg, "z");
-    iter_x != iter_x.end(); ++iter_x, ++iter_y, ++iter_z)
-  {
-    if (std::isnan(*iter_x) || std::isnan(*iter_y) || std::isnan(*iter_z)) {
-      RCLCPP_DEBUG(
-        this->get_logger(),
-        "rejected for nan in point(%f, %f, %f)\n",
-        *iter_x, *iter_y, *iter_z);
-      continue;
+    if (scan_msg->header.frame_id != cloud_msg->header.frame_id) {
+      try {
+        auto cloud = std::make_shared<sensor_msgs::msg::PointCloud2>();
+        tf2_->transform(*cloud_msg, *cloud, target_frame_, tf2::durationFromSec(tolerance_));
+        cloud_msg = cloud;
+      } catch (tf2::TransformException & ex) {
+        RCLCPP_ERROR_STREAM(this->get_logger(), "Transform failure: " << ex.what());
+        return;
+      }
     }
 
-    if (*iter_z > max_height_ || *iter_z < min_height_) {
-      RCLCPP_DEBUG(
-        this->get_logger(),
-        "rejected for height %f not in range (%f, %f)\n",
-        *iter_z, min_height_, max_height_);
-      continue;
-    }
+    // Iterate through pointcloud
+    for (sensor_msgs::PointCloud2ConstIterator<float> iter_x(*cloud_msg, "x"),
+      iter_y(*cloud_msg, "y"), iter_z(*cloud_msg, "z");
+      iter_x != iter_x.end(); ++iter_x, ++iter_y, ++iter_z)
+    {
+      if (std::isnan(*iter_x) || std::isnan(*iter_y) || std::isnan(*iter_z)) {
+        RCLCPP_DEBUG(
+          this->get_logger(),
+          "rejected for nan in point(%f, %f, %f)\n",
+          *iter_x, *iter_y, *iter_z);
+        continue;
+      }
 
-    double range = hypot(*iter_x, *iter_y);
-    if (range < range_min_) {
-      RCLCPP_DEBUG(
-        this->get_logger(),
-        "rejected for range %f below minimum value %f. Point: (%f, %f, %f)",
-        range, range_min_, *iter_x, *iter_y, *iter_z);
-      continue;
-    }
-    if (range > range_max_) {
-      RCLCPP_DEBUG(
-        this->get_logger(),
-        "rejected for range %f above maximum value %f. Point: (%f, %f, %f)",
-        range, range_max_, *iter_x, *iter_y, *iter_z);
-      continue;
-    }
+      if (*iter_z > max_height_ || *iter_z < min_height_) {
+        RCLCPP_DEBUG(
+          this->get_logger(),
+          "rejected for height %f not in range (%f, %f)\n",
+          *iter_z, min_height_, max_height_);
+        continue;
+      }
 
-    double angle = atan2(*iter_y, *iter_x);
-    if (angle < scan_msg->angle_min || angle > scan_msg->angle_max) {
-      RCLCPP_DEBUG(
-        this->get_logger(),
-        "rejected for angle %f not in range (%f, %f)\n",
-        angle, scan_msg->angle_min, scan_msg->angle_max);
-      continue;
-    }
+      double range = hypot(*iter_x, *iter_y);
+      if (range < range_min_) {
+        RCLCPP_DEBUG(
+          this->get_logger(),
+          "rejected for range %f below minimum value %f. Point: (%f, %f, %f)",
+          range, range_min_, *iter_x, *iter_y, *iter_z);
+        continue;
+      }
+      if (range > range_max_) {
+        RCLCPP_DEBUG(
+          this->get_logger(),
+          "rejected for range %f above maximum value %f. Point: (%f, %f, %f)",
+          range, range_max_, *iter_x, *iter_y, *iter_z);
+        continue;
+      }
 
-    // overwrite range at laserscan ray if new range is smaller
-    int index = (angle - scan_msg->angle_min) / scan_msg->angle_increment;
-    if (range < scan_msg->ranges[index]) {
-      scan_msg->ranges[index] = range;
+      double angle = atan2(*iter_y, *iter_x);
+      if (angle < scan_msg->angle_min || angle > scan_msg->angle_max) {
+        RCLCPP_DEBUG(
+          this->get_logger(),
+          "rejected for angle %f not in range (%f, %f)\n",
+          angle, scan_msg->angle_min, scan_msg->angle_max);
+        continue;
+      }
+
+      // overwrite range at laserscan ray if new range is smaller
+      int index = (angle - scan_msg->angle_min) / scan_msg->angle_increment;
+      if (range < scan_msg->ranges[index]) {
+        scan_msg->ranges[index] = range;
+      }
     }
+  
   }
   pub_->publish(std::move(scan_msg));
 }

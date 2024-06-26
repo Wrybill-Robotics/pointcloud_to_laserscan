@@ -4,6 +4,9 @@ project(pointcloud_to_laserscan)
 find_package(ament_cmake_auto REQUIRED)
 ament_auto_find_build_dependencies()
 
+# Find the example_interfaces package
+find_package(std_srvs REQUIRED)
+
 ament_auto_add_library(laserscan_to_pointcloud SHARED
   src/laserscan_to_pointcloud_node.cpp)
 
