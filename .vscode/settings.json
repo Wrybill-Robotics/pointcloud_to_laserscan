@@ -1,0 +1,36 @@
+{
+	"python.autoComplete.extraPaths": [
+		"/home/craigms/mercury_ws/install/webots_ros2/lib/python3.10/site-packages",
+		"/home/craigms/mercury_ws/install/webots_ros2_universal_robot/lib/python3.10/site-packages",
+		"/home/craigms/mercury_ws/install/webots_ros2_turtlebot/lib/python3.10/site-packages",
+		"/home/craigms/mercury_ws/install/webots_ros2_tiago/lib/python3.10/site-packages",
+		"/home/craigms/mercury_ws/install/webots_ros2_tests/lib/python3.10/site-packages",
+		"/home/craigms/mercury_ws/install/webots_ros2_tesla/lib/python3.10/site-packages",
+		"/home/craigms/mercury_ws/install/webots_ros2_mavic/lib/python3.10/site-packages",
+		"/home/craigms/mercury_ws/install/webots_ros2_epuck/lib/python3.10/site-packages",
+		"/home/craigms/mercury_ws/install/webots_ros2_driver/local/lib/python3.10/dist-packages",
+		"/home/craigms/mercury_ws/install/webots_ros2_msgs/local/lib/python3.10/dist-packages",
+		"/home/craigms/mercury_ws/install/webots_ros2_importer/lib/python3.10/site-packages",
+		"/home/craigms/mercury_ws/install/twist_stamper/lib/python3.10/site-packages",
+		"/home/craigms/mercury_ws/install/robot_pose/lib/python3.10/site-packages",
+		"/opt/ros/humble/lib/python3.10/site-packages",
+		"/opt/ros/humble/local/lib/python3.10/dist-packages"
+	],
+	"python.analysis.extraPaths": [
+		"/home/craigms/mercury_ws/install/webots_ros2/lib/python3.10/site-packages",
+		"/home/craigms/mercury_ws/install/webots_ros2_universal_robot/lib/python3.10/site-packages",
+		"/home/craigms/mercury_ws/install/webots_ros2_turtlebot/lib/python3.10/site-packages",
+		"/home/craigms/mercury_ws/install/webots_ros2_tiago/lib/python3.10/site-packages",
+		"/home/craigms/mercury_ws/install/webots_ros2_tests/lib/python3.10/site-packages",
+		"/home/craigms/mercury_ws/install/webots_ros2_tesla/lib/python3.10/site-packages",
+		"/home/craigms/mercury_ws/install/webots_ros2_mavic/lib/python3.10/site-packages",
+		"/home/craigms/mercury_ws/install/webots_ros2_epuck/lib/python3.10/site-packages",
+		"/home/craigms/mercury_ws/install/webots_ros2_driver/local/lib/python3.10/dist-packages",
+		"/home/craigms/mercury_ws/install/webots_ros2_msgs/local/lib/python3.10/dist-packages",
+		"/home/craigms/mercury_ws/install/webots_ros2_importer/lib/python3.10/site-packages",
+		"/home/craigms/mercury_ws/install/twist_stamper/lib/python3.10/site-packages",
+		"/home/craigms/mercury_ws/install/robot_pose/lib/python3.10/site-packages",
+		"/opt/ros/humble/lib/python3.10/site-packages",
+		"/opt/ros/humble/local/lib/python3.10/dist-packages"
+	]
+}

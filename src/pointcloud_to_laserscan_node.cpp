@@ -119,14 +119,16 @@ void PointCloudToLaserScanNode::toggleActiveOutput(
   const std::shared_ptr<std_srvs::srv::SetBool::Request> request,
   std::shared_ptr<std_srvs::srv::SetBool::Response> response)
 {
-  RCLCPP_INFO(
-          this->get_logger(),
-          "Pointcloud infinite output set to : %i",
-          active_output_);
   active_output_ = request->data;
   this->set_parameter(rclcpp::Parameter("active_output", active_output_));
+  
   response->success = true;
   response->message = "Active output set to " + std::to_string(active_output_);
+
+  RCLCPP_INFO(
+          this->get_logger(),
+          "Active output set to : %s",
+          ((active_output_)?"true":"false"));
 }
 
 void PointCloudToLaserScanNode::subscriptionListenerThreadLoop()

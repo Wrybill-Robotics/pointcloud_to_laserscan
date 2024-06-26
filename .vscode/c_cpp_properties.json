@@ -1,0 +1,40 @@
+{
+  "configurations": [
+    {
+      "browse": {
+        "databaseFilename": "${default}",
+        "limitSymbolsToIncludedHeaders": false
+      },
+      "includePath": [
+        "/home/craigms/mercury_ws/install/webots_ros2_control/include/**",
+        "/home/craigms/mercury_ws/install/webots_ros2_driver/include/**",
+        "/home/craigms/mercury_ws/install/webots_ros2_msgs/include/**",
+        "/home/craigms/mercury_ws/install/pointcloud_to_laserscan/include/**",
+        "/home/craigms/mercury_ws/install/nav2_straightline_planner/include/**",
+        "/home/craigms/mercury_ws/install/gps_zone_handler/include/**",
+        "/home/craigms/mercury_ws/install/diffdrive_vesc/include/**",
+        "/opt/ros/humble/include/**",
+        "/home/craigms/mercury_ws/src/cmd_vel_handler/include/**",
+        "/home/craigms/mercury_ws/src/diffdrive_vesc/include/**",
+        "/home/craigms/mercury_ws/src/gps_heading_handler/include/**",
+        "/home/craigms/mercury_ws/src/gps_sim_handler/include/**",
+        "/home/craigms/mercury_ws/src/gps_zone_handler/include/**",
+        "/home/craigms/mercury_ws/src/mercury_one_localisation/include/**",
+        "/home/craigms/mercury_ws/src/mercury_one_navigation/include/**",
+        "/home/craigms/mercury_ws/src/mercury_one_sim/include/**",
+        "/home/craigms/mercury_ws/src/nav2_straightline_planner/include/**",
+        "/home/craigms/mercury_ws/src/path_recording/include/**",
+        "/home/craigms/mercury_ws/src/pointcloud_to_laserscan/include/**",
+        "/home/craigms/mercury_ws/src/webots_ros2/webots_ros2_control/include/**",
+        "/home/craigms/mercury_ws/src/webots_ros2/webots_ros2_driver/include/**",
+        "/usr/include/**"
+      ],
+      "name": "ROS",
+      "intelliSenseMode": "gcc-x64",
+      "compilerPath": "/usr/bin/gcc",
+      "cStandard": "gnu11",
+      "cppStandard": "c++14"
+    }
+  ],
+  "version": 4
+}
