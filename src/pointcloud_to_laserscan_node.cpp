@@ -74,7 +74,7 @@ PointCloudToLaserScanNode::PointCloudToLaserScanNode(const rclcpp::NodeOptions &
   range_max_ = this->declare_parameter("range_max", std::numeric_limits<double>::max());
   inf_epsilon_ = this->declare_parameter("inf_epsilon", 1.0);
   use_inf_ = this->declare_parameter("use_inf", true);
-  active_output_ = this->declare_parameter("active_output", false);
+  active_output_ = this->declare_parameter("active_output", true);
 
   // Create service name with target frame as namespace
   std::string service_name = std::string(this->get_namespace()) +  std::string(this->get_name()) + std::string("/toggle_active_output");
