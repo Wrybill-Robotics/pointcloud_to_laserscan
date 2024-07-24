@@ -21,8 +21,6 @@ include_directories(
         include
 )
 
-# ament_target_dependencies(${PROJECT_NAME} ${dependencies} PCL)
-
 ament_auto_add_library(laserscan_to_pointcloud SHARED
   src/laserscan_to_pointcloud_node.cpp)
 

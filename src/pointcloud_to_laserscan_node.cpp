@@ -51,8 +51,10 @@
 #include <pcl/io/pcd_io.h>
 #include <pcl/point_types.h>
 #include <pcl/conversions.h>
-#include <pcl/filters/voxel_grid.h>
+// #include <pcl/filters/voxel_grid.h>
+#include <pcl/filters/radius_outlier_removal.h>
 #include <pcl_conversions/pcl_conversions.h>
+
 
 #include "sensor_msgs/point_cloud2_iterator.hpp"
 #include "tf2_sensor_msgs/tf2_sensor_msgs.hpp"
@@ -64,23 +66,20 @@ namespace pointcloud_to_laserscan
 PointCloudToLaserScanNode::PointCloudToLaserScanNode(const rclcpp::NodeOptions & options)
 : rclcpp::Node("pointcloud_to_laserscan", options)
 {
-  target_frame_ = this->declare_parameter("target_frame", "");
-  tolerance_ = this->declare_parameter("transform_tolerance", 0.01);
-  // TODO(hidmic): adjust default input queue size based on actual concurrency levels
-  // achievable by the associated executor
-  input_queue_size_ = this->declare_parameter(
-    "queue_size", static_cast<int>(std::thread::hardware_concurrency()));
-  min_height_ = this->declare_parameter("min_height", std::numeric_limits<double>::min());
-  max_height_ = this->declare_parameter("max_height", std::numeric_limits<double>::max());
-  angle_min_ = this->declare_parameter("angle_min", -M_PI);
-  angle_max_ = this->declare_parameter("angle_max", M_PI);
-  angle_increment_ = this->declare_parameter("angle_increment", M_PI / 180.0);
-  scan_time_ = this->declare_parameter("scan_time", 1.0 / 30.0);
-  range_min_ = this->declare_parameter("range_min", 0.0);
-  range_max_ = this->declare_parameter("range_max", std::numeric_limits<double>::max());
-  inf_epsilon_ = this->declare_parameter("inf_epsilon", 1.0);
-  use_inf_ = this->declare_parameter("use_inf", true);
-  active_output_ = this->declare_parameter("active_output", true);
+  target_frame_     = this->declare_parameter("target_frame", "");
+  tolerance_        = this->declare_parameter("transform_tolerance", 0.01);
+  input_queue_size_ = this->declare_parameter("queue_size", static_cast<int>(std::thread::hardware_concurrency()));
+  min_height_       = this->declare_parameter("min_height", std::numeric_limits<double>::min());
+  max_height_       = this->declare_parameter("max_height", std::numeric_limits<double>::max());
+  angle_min_        = this->declare_parameter("angle_min", -M_PI);
+  angle_max_        = this->declare_parameter("angle_max", M_PI);
+  angle_increment_  = this->declare_parameter("angle_increment", M_PI / 180.0);
+  scan_time_        = this->declare_parameter("scan_time", 1.0 / 30.0);
+  range_min_        = this->declare_parameter("range_min", 0.0);
+  range_max_        = this->declare_parameter("range_max", std::numeric_limits<double>::max());
+  inf_epsilon_      = this->declare_parameter("inf_epsilon", 1.0);
+  use_inf_          = this->declare_parameter("use_inf", true);
+  active_output_    = this->declare_parameter("active_output", true);
 
   // Create service name with target frame as namespace
   std::string service_name = std::string(this->get_namespace()) +  std::string(this->get_name()) + std::string("/toggle_active_output");
@@ -132,9 +131,9 @@ void PointCloudToLaserScanNode::toggleActiveOutput(
   response->message = "Active output set to " + std::to_string(active_output_);
 
   RCLCPP_INFO(
-          this->get_logger(),
-          "Active output set to : %s",
-          ((active_output_)?"true":"false"));
+    this->get_logger(),
+    "Active output set to : %s",
+    ((active_output_)?"true":"false"));
 }
 
 void PointCloudToLaserScanNode::subscriptionListenerThreadLoop()
@@ -166,27 +165,52 @@ void PointCloudToLaserScanNode::subscriptionListenerThreadLoop()
   sub_.unsubscribe();
 }
 
+void PointCloudToLaserScanNode::filterLaserScan(std::unique_ptr<sensor_msgs::msg::LaserScan> &scan_msg, double distance_threshold) {
+  std::vector<float> filtered_ranges = scan_msg->ranges;
+  size_t n = scan_msg->ranges.size();
+
+  for (size_t i = 2; i < n - 2; ++i) {
+    if (std::isfinite(scan_msg->ranges[i])) {
+      double range = scan_msg->ranges[i];
+
+      double avg_neighbour_range = (scan_msg->ranges[i - 2] + scan_msg->ranges[i - 1] +
+                                    scan_msg->ranges[i + 1] + scan_msg->ranges[i + 2]) / 4.0;
+
+      if (fabs(range - avg_neighbour_range) > distance_threshold) {
+        filtered_ranges[i] = std::numeric_limits<float>::infinity();
+      }
+    }
+  }
+
+  scan_msg->ranges = filtered_ranges;
+}
+
 void PointCloudToLaserScanNode::cloudCallback(
   sensor_msgs::msg::PointCloud2::ConstSharedPtr cloud_msg)
 {
-  // Convert ROS2 PointCloud2 to PCLPointCloud2
-  pcl::PCLPointCloud2::Ptr pcl_cloud(new pcl::PCLPointCloud2());
-  pcl_conversions::toPCL(*cloud_msg, *pcl_cloud);
-  
-  // Apply voxel grid filter
-  pcl::PCLPointCloud2::Ptr voxel_cloud(new pcl::PCLPointCloud2());
-  pcl::VoxelGrid<pcl::PCLPointCloud2> voxel_filter;
-  voxel_filter.setInputCloud(pcl_cloud);
-  voxel_filter.setLeafSize(0.05, 0.05, 0.05);
-  voxel_filter.filter(*voxel_cloud);
+  // Convert ROS2 PointCloud2 to PCL PointCloud<pcl::PointXYZ>
+  pcl::PointCloud<pcl::PointXYZ>::Ptr pcl_cloud(new pcl::PointCloud<pcl::PointXYZ>());
+  pcl::fromROSMsg(*cloud_msg, *pcl_cloud);
 
-  // Convert filtered PCLPointCloud2 back to ROS2 PointCloud2
-  sensor_msgs::msg::PointCloud2 filtered_cloud_msg;
-  pcl_conversions::fromPCL(*voxel_cloud, filtered_cloud_msg);
-  filtered_cloud_msg.header = cloud_msg->header;
+  // // Convert ROS2 PointCloud2 to PCL PointCloud<pcl::PointXYZ>
+  // pcl::PointCloud<pcl::PointXYZ>::Ptr pcl_cloud(new pcl::PointCloud<pcl::PointXYZ>());
+  // pcl::fromROSMsg(*cloud_msg, *pcl_cloud);
 
-  // Use the filtered point cloud for further processing
-  cloud_msg = std::make_shared<sensor_msgs::msg::PointCloud2>(filtered_cloud_msg);
+  // // Apply Radius Outlier Removal filter
+  // pcl::PointCloud<pcl::PointXYZ>::Ptr filtered_cloud(new pcl::PointCloud<pcl::PointXYZ>());
+  // pcl::RadiusOutlierRemoval<pcl::PointXYZ> ror;
+  // ror.setInputCloud(pcl_cloud);
+  // ror.setRadiusSearch(0.05);  // Radius to search around each point
+  // ror.setMinNeighborsInRadius(20);  // Minimum number of neighbors a point must have to remain in the cloud
+  // ror.filter(*filtered_cloud);
+
+  // // Convert filtered PCL PointCloud<pcl::PointXYZ> back to ROS2 PointCloud2
+  // sensor_msgs::msg::PointCloud2 filtered_cloud_msg;
+  // pcl::toROSMsg(*filtered_cloud, filtered_cloud_msg);
+  // filtered_cloud_msg.header = cloud_msg->header;
+
+  // // Use the filtered point cloud for further processing
+  // cloud_msg = std::make_shared<sensor_msgs::msg::PointCloud2>(filtered_cloud_msg);
 
 
   // build laserscan output
@@ -205,8 +229,7 @@ void PointCloudToLaserScanNode::cloudCallback(
   scan_msg->range_max = range_max_;
 
   // determine amount of rays to create
-  uint32_t ranges_size = std::ceil(
-    (scan_msg->angle_max - scan_msg->angle_min) / scan_msg->angle_increment);
+  uint32_t ranges_size = std::ceil((scan_msg->angle_max - scan_msg->angle_min) / scan_msg->angle_increment);
 
   // determine if laserscan rays with no obstacle data will evaluate to infinity or max_range
   if (use_inf_) {
@@ -283,8 +306,12 @@ void PointCloudToLaserScanNode::cloudCallback(
         scan_msg->ranges[index] = range;
       }
     }
-  
   }
+  
+  // Apply the filtering
+  filterLaserScan(scan_msg, 0.1);  // Use an appropriate distance threshold
+
+
   pub_->publish(std::move(scan_msg));
 }
 

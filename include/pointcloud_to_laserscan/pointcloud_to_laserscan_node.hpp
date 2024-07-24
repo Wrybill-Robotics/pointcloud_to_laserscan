@@ -81,7 +81,7 @@ public:
 
 private:
   void cloudCallback(sensor_msgs::msg::PointCloud2::ConstSharedPtr cloud_msg);
-
+  void filterLaserScan(std::unique_ptr<sensor_msgs::msg::LaserScan> &scan_msg, double distance_threshold);
   void subscriptionListenerThreadLoop();
   void toggleActiveOutput(
     const std::shared_ptr<std_srvs::srv::SetBool::Request> request,
