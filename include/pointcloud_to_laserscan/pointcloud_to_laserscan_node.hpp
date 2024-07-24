@@ -46,6 +46,11 @@
 #include <string>
 #include <thread>
 
+#include <pcl/io/pcd_io.h>
+#include <pcl/point_types.h>
+#include <pcl/conversions.h>
+#include <pcl/filters/voxel_grid.h>
+
 #include "message_filters/subscriber.h"
 #include "tf2_ros/buffer.h"
 #include "tf2_ros/message_filter.h"

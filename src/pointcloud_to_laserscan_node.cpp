@@ -48,6 +48,12 @@
 #include <thread>
 #include <utility>
 
+#include <pcl/io/pcd_io.h>
+#include <pcl/point_types.h>
+#include <pcl/conversions.h>
+#include <pcl/filters/voxel_grid.h>
+#include <pcl_conversions/pcl_conversions.h>
+
 #include "sensor_msgs/point_cloud2_iterator.hpp"
 #include "tf2_sensor_msgs/tf2_sensor_msgs.hpp"
 #include "tf2_ros/create_timer_ros.h"
@@ -163,6 +169,26 @@ void PointCloudToLaserScanNode::subscriptionListenerThreadLoop()
 void PointCloudToLaserScanNode::cloudCallback(
   sensor_msgs::msg::PointCloud2::ConstSharedPtr cloud_msg)
 {
+  // Convert ROS2 PointCloud2 to PCLPointCloud2
+  pcl::PCLPointCloud2::Ptr pcl_cloud(new pcl::PCLPointCloud2());
+  pcl_conversions::toPCL(*cloud_msg, *pcl_cloud);
+  
+  // Apply voxel grid filter
+  pcl::PCLPointCloud2::Ptr voxel_cloud(new pcl::PCLPointCloud2());
+  pcl::VoxelGrid<pcl::PCLPointCloud2> voxel_filter;
+  voxel_filter.setInputCloud(pcl_cloud);
+  voxel_filter.setLeafSize(0.05, 0.05, 0.05);
+  voxel_filter.filter(*voxel_cloud);
+
+  // Convert filtered PCLPointCloud2 back to ROS2 PointCloud2
+  sensor_msgs::msg::PointCloud2 filtered_cloud_msg;
+  pcl_conversions::fromPCL(*voxel_cloud, filtered_cloud_msg);
+  filtered_cloud_msg.header = cloud_msg->header;
+
+  // Use the filtered point cloud for further processing
+  cloud_msg = std::make_shared<sensor_msgs::msg::PointCloud2>(filtered_cloud_msg);
+
+
   // build laserscan output
   auto scan_msg = std::make_unique<sensor_msgs::msg::LaserScan>();
   scan_msg->header = cloud_msg->header;
