@@ -16,11 +16,12 @@ add_definitions(${PCL_DEFINITIONS})
 # link_directories(${PCL_LIBRARY_DIRS})
 # add_definitions(${PCL_DEFINITIONS})
 include_directories(
-        ${catkin_INCLUDE_DIRS}
-        ${PCL_INCLUDE_DIRS}
-        include
+  ${catkin_INCLUDE_DIRS}
+  ${PCL_INCLUDE_DIRS}
+  include
 )
 
+# Install Laserscan to Pointcloud
 ament_auto_add_library(laserscan_to_pointcloud SHARED
   src/laserscan_to_pointcloud_node.cpp)
 
@@ -28,6 +29,7 @@ rclcpp_components_register_node(laserscan_to_pointcloud
   PLUGIN "pointcloud_to_laserscan::LaserScanToPointCloudNode"
   EXECUTABLE laserscan_to_pointcloud_node)
 
+  # Install Pointcloud to Laserscan
 ament_auto_add_library(pointcloud_to_laserscan SHARED
   src/pointcloud_to_laserscan_node.cpp)
 
